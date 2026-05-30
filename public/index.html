@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AstroDay</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="estrutura-pagina">
+    <header class="cabecalho-projeto">
+      <p class="rotulo-api">NASA APOD</p>
+      <h1>AstroDay</h1>
+      <p>Explore imagens astronômicas diretamente da NASA</p>
+    </header>
+
+    <main>
+      <section class="secao-busca" aria-labelledby="titulo-secao-busca">
+        <div>
+          <h2 id="titulo-secao-busca">Buscar imagem</h2>
+        </div>
+
+        <form id="formulario-busca-data" class="formulario-busca">
+          <label for="campo-data-imagem">Data</label>
+          <input type="date" id="campo-data-imagem" name="data-imagem">
+          <button type="submit" class="botao botao-principal">Buscar por data</button>
+          <button type="button" id="botao-imagem-atual" class="botao botao-secundario">Imagem de hoje</button>
+        </form>
+      </section>
+
+      <div id="area-retorno-sistema" class="area-mensagens" aria-live="polite"></div>
+
+      <section class="grade-conteudo">
+        <article id="cartao-imagem-consultada" class="cartao-imagem-principal">
+          <div class="caixa-carregando">
+            <span class="indicador-carregando"></span>
+            <p>Carregando imagem astronômica...</p>
+          </div>
+        </article>
+
+        <aside class="painel-indicadores" aria-labelledby="titulo-painel-indicadores">
+          <div class="cabecalho-secao">
+            <p>Painel</p>
+            <h2 id="titulo-painel-indicadores">Favoritos salvos</h2>
+          </div>
+
+          <div class="grade-estatisticas">
+            <article class="cartao-estatistica">
+              <span>Total</span>
+              <strong id="indicador-total-favoritos">0</strong>
+            </article>
+            <article class="cartao-estatistica">
+              <span>Imagens</span>
+              <strong id="indicador-total-imagens">0</strong>
+            </article>
+            <article class="cartao-estatistica">
+              <span>Vídeos</span>
+              <strong id="indicador-total-videos">0</strong>
+            </article>
+            <article class="cartao-estatistica cartao-estatistica-largo">
+              <span>Último favorito</span>
+              <strong id="indicador-ultimo-favorito">Nenhum</strong>
+            </article>
+          </div>
+        </aside>
+      </section>
+
+      <section class="secao-favoritos" aria-labelledby="titulo-secao-favoritos">
+        <div class="cabecalho-secao">
+          <p>Galeria</p>
+          <h2 id="titulo-secao-favoritos">Meus favoritos</h2>
+        </div>
+
+        <div id="galeria-favoritos-salvos" class="grade-favoritos"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal-detalhes-favorito" class="janela-modal" aria-hidden="true">
+    <div class="fundo-modal" data-fechar-modal></div>
+    <section class="painel-modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-detalhes">
+      <button type="button" id="botao-fechar-detalhes" class="botao-fechar-modal" aria-label="Fechar detalhes">×</button>
+      <div id="conteudo-detalhes-favorito"></div>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
