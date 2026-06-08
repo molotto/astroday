@@ -1,6 +1,7 @@
 let imagemAtual = null;
 let favoritosAtuais = [];
 let tempoMensagem = null;
+let codigoBuscaImagem = 0;
 
 let formularioBusca;
 let campoData;
@@ -86,23 +87,49 @@ function limparTexto(texto) {
 
 async function buscarJSON(url, opcoes) {
   const resposta = await fetch(url, opcoes || {});
-  const dados = await resposta.json();
+  const dados = await resposta.json().catch(() => ({}));
 
   if (!resposta.ok) {
-    throw new Error(dados.erro || dados.mensagem || 'Erro ao consultar os dados.');
+    let mensagem = dados.erro || dados.mensagem || 'Erro ao consultar os dados.';
+
+    if (dados.detalhe) {
+      mensagem = `${mensagem} Detalhe: ${dados.detalhe}`;
+    }
+
+    throw new Error(mensagem);
   }
 
   return dados;
 }
 
+function iniciarBuscaImagem() {
+  codigoBuscaImagem += 1;
+  return codigoBuscaImagem;
+}
+
+function buscaImagemAindaAtual(codigoBusca) {
+  return codigoBusca === codigoBuscaImagem;
+}
+
 async function carregarImagemDoDia() {
+  const codigoBusca = iniciarBuscaImagem();
+
   cartaoImagem.innerHTML = '<div class="caixa-carregando"><span class="indicador-carregando"></span><p>Carregando imagem astronômica...</p></div>';
 
   try {
     const dados = await buscarJSON('/api/nasa/today');
+
+    if (!buscaImagemAindaAtual(codigoBusca)) {
+      return;
+    }
+
     renderizarImagemPrincipal(dados);
     mostrarMensagem('Imagem carregada com sucesso.', 'sucesso');
   } catch (error) {
+    if (!buscaImagemAindaAtual(codigoBusca)) {
+      return;
+    }
+
     cartaoImagem.innerHTML = '<div class="estado-vazio"><p>Não foi possível consultar a API da NASA.</p></div>';
     mostrarMensagem(error.message, 'erro');
   }
@@ -124,12 +151,22 @@ async function buscarImagemPorData(event) {
   }
 
   cartaoImagem.innerHTML = '<div class="caixa-carregando"><span class="indicador-carregando"></span><p>Buscando imagem...</p></div>';
+  const codigoBusca = iniciarBuscaImagem();
 
   try {
     const dados = await buscarJSON(`/api/nasa/date/${dataEscolhida}`);
+
+    if (!buscaImagemAindaAtual(codigoBusca)) {
+      return;
+    }
+
     renderizarImagemPrincipal(dados);
     mostrarMensagem('Imagem carregada com sucesso.', 'sucesso');
   } catch (error) {
+    if (!buscaImagemAindaAtual(codigoBusca)) {
+      return;
+    }
+
     cartaoImagem.innerHTML = '<div class="estado-vazio"><p>Não foi possível consultar essa data.</p></div>';
     mostrarMensagem(error.message, 'erro');
   }
