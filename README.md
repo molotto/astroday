@@ -32,6 +32,7 @@ Crie um arquivo `.env` na raiz do projeto com base no `.env.example`:
 PORT=3000
 
 DB_HOST=localhost
+DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=astroday
@@ -45,12 +46,13 @@ Caso você tenha uma chave própria da NASA, substitua `DEMO_KEY` pelo valor da 
 
 Deixe o MySQL rodando localmente e confira se o usuário e a senha do `.env` estão corretos.
 
-O AstroDay cria automaticamente:
+Antes de iniciar o projeto, importe o arquivo `database.sql` no MySQL:
 
-- o banco `astroday`, caso ele ainda não exista;
-- a tabela `favoritos`, caso ela ainda não exista.
+```bash
+mysql -u root -p < database.sql
+```
 
-A configuracao tambem pode ser feita manualmente executando o arquivo `database.sql` no MySQL.
+Esse arquivo cria o banco `astroday` e a tabela `favoritos`.
 
 A tabela usada pelo sistema é:
 
