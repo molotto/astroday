@@ -1,32 +1,30 @@
-# AstroDay
+# Instrucoes basicas de execucao - AstroDay
 
-AstroDay é uma aplicação web simples para explorar a APOD, a imagem astronômica do dia da NASA. O usuário pode ver a imagem atual, pesquisar por data e salvar favoritos em um banco MySQL.
+AstroDay e uma aplicacao web para consultar a APOD, a imagem astronomica do dia da NASA, pesquisar imagens por data e salvar favoritos em um banco de dados MySQL.
 
-## Tecnologias usadas
+## Pre-requisitos
 
-- HTML
-- CSS puro com Flexbox e Grid
-- JavaScript puro no front-end
-- Node.js
-- Express
-- MySQL
-- `mysql2/promise`
-- Fetch API
-- NASA APOD API
+- Node.js 18 ou superior
+- MySQL instalado e em execucao
+- npm
 
-## API externa
+## 1. Entrar na pasta do projeto
 
-O projeto consome a API pública **NASA APOD - Astronomy Picture of the Day**:
-
-```txt
-https://api.nasa.gov/planetary/apod
+```bash
+cd astroday
 ```
 
-A chave da NASA fica apenas no back-end, usando a variável `NASA_API_KEY`. Se nenhuma chave for configurada, o sistema usa `DEMO_KEY`.
+## 2. Instalar as dependencias
 
-## Configuração do ambiente
+```bash
+npm install
+```
 
-Crie um arquivo `.env` na raiz do projeto com base no `.env.example`:
+## 3. Configurar o arquivo .env
+
+Crie um arquivo `.env` na raiz do projeto com base no arquivo `.env.example`.
+
+Exemplo:
 
 ```env
 PORT=3000
@@ -40,84 +38,64 @@ DB_NAME=astroday
 NASA_API_KEY=DEMO_KEY
 ```
 
-Caso você tenha uma chave própria da NASA, substitua `DEMO_KEY` pelo valor da sua chave.
+Caso tenha uma chave propria da NASA, substitua `DEMO_KEY` pelo valor da sua chave. Se nenhuma chave for configurada, o sistema usa `DEMO_KEY`.
 
-## Banco de dados MySQL
+## Como obter a NASA API Key
 
-Deixe o MySQL rodando localmente e confira se o usuário e a senha do `.env` estão corretos.
+1. Acesse o site oficial das APIs da NASA:
 
-Antes de iniciar o projeto, importe o arquivo `database.sql` no MySQL:
+```txt
+https://api.nasa.gov/
+```
+
+2. Na secao `Generate API Key`, preencha o formulario com seus dados.
+
+3. Depois de gerar a chave, copie o valor recebido.
+
+4. No arquivo `.env`, substitua `DEMO_KEY` pela sua chave:
+
+O projeto tambem funciona com `DEMO_KEY`, mas eh bem limitado.
+
+## 4. Importar o banco de dados
+
+O arquivo de exportacao SQL do projeto e:
+
+```txt
+database.sql
+```
+
+Esse arquivo cria o banco `astroday` e a tabela `favoritos`.
+
+No terminal, execute:
 
 ```bash
 mysql -u root -p < database.sql
 ```
 
-Esse arquivo cria o banco `astroday` e a tabela `favoritos`.
+Se estiver usando PowerShell e o comando acima nao funcionar, use:
 
-A tabela usada pelo sistema é:
-
-```sql
-CREATE TABLE IF NOT EXISTS favoritos (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  titulo VARCHAR(255) NOT NULL,
-  data_imagem DATE NOT NULL,
-  explicacao TEXT,
-  url TEXT NOT NULL,
-  hdurl TEXT NULL,
-  media_type VARCHAR(50),
-  copyright VARCHAR(255) NULL,
-  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+```powershell
+Get-Content database.sql | mysql -u root -p
 ```
 
-## Instalação
+## 5. Iniciar o projeto
 
-Instale as dependências:
-
-```bash
-npm install
-```
-
-## Como rodar
-
-Para iniciar em modo de desenvolvimento:
-
-```bash
-npm run dev
-```
-
-Também é possível iniciar com:
+Para iniciar normalmente:
 
 ```bash
 npm start
 ```
 
-Depois, acesse:
+Ou, em modo desenvolvimento:
+
+```bash
+npm run dev
+```
+
+## 6. Acessar o sistema
+
+Depois de iniciar o servidor, acesse no navegador:
 
 ```txt
 http://localhost:3000
 ```
-
-## Funcionalidades
-
-- Carrega automaticamente a imagem astronômica do dia.
-- Busca imagens da NASA por data.
-- Exibe imagem ou vídeo, conforme o retorno da API.
-- Salva favoritos no MySQL.
-- Impede favoritos duplicados pela mesma data.
-- Lista favoritos em uma galeria responsiva.
-- Exibe detalhes completos em modal.
-- Exclui favoritos salvos.
-- Mostra dashboard com total de favoritos, imagens, vídeos e último favorito salvo.
-
-## Rotas principais
-
-```http
-GET /api/nasa/today
-GET /api/nasa/date/:date
-GET /api/favoritos
-POST /api/favoritos
-DELETE /api/favoritos/:id
-```
-
-O front-end chama apenas essas rotas locais. A chamada para a NASA é feita pelo back-end.
