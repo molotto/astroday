@@ -3,6 +3,7 @@ let favoritosAtuais = [];
 let tempoMensagem = null;
 let codigoBuscaImagem = 0;
 const TEMPO_LIMITE_REQUISICAO = 20000;
+const TEMPO_LIMITE_REQUISICAO_NASA = 45000;
 
 let formularioBusca;
 let campoData;
@@ -88,13 +89,17 @@ function limparTexto(texto) {
 
 async function buscarJSON(url, opcoes) {
   const controlador = new AbortController();
+  const tempoLimite = url.startsWith('/api/nasa/')
+    ? TEMPO_LIMITE_REQUISICAO_NASA
+    : TEMPO_LIMITE_REQUISICAO;
   const timeout = setTimeout(function () {
     controlador.abort();
-  }, TEMPO_LIMITE_REQUISICAO);
+  }, tempoLimite);
 
   try {
     const resposta = await fetch(url, {
       ...(opcoes || {}),
+      cache: 'no-store',
       signal: controlador.signal
     });
 
