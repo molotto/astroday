@@ -2,6 +2,7 @@ let imagemAtual = null;
 let favoritosAtuais = [];
 let tempoMensagem = null;
 let codigoBuscaImagem = 0;
+const TEMPO_LIMITE_REQUISICAO = 20000;
 
 let formularioBusca;
 let campoData;
@@ -86,20 +87,39 @@ function limparTexto(texto) {
 }
 
 async function buscarJSON(url, opcoes) {
-  const resposta = await fetch(url, opcoes || {});
-  const dados = await resposta.json().catch(() => ({}));
+  const controlador = new AbortController();
+  const timeout = setTimeout(function () {
+    controlador.abort();
+  }, TEMPO_LIMITE_REQUISICAO);
 
-  if (!resposta.ok) {
-    let mensagem = dados.erro || dados.mensagem || 'Erro ao consultar os dados.';
+  try {
+    const resposta = await fetch(url, {
+      ...(opcoes || {}),
+      signal: controlador.signal
+    });
 
-    if (dados.detalhe) {
-      mensagem = `${mensagem} Detalhe: ${dados.detalhe}`;
+    const dados = await resposta.json().catch(() => ({}));
+
+    if (!resposta.ok) {
+      let mensagem = dados.erro || dados.mensagem || 'Erro ao consultar os dados.';
+
+      if (dados.detalhe) {
+        mensagem = `${mensagem} Detalhe: ${dados.detalhe}`;
+      }
+
+      throw new Error(mensagem);
     }
 
-    throw new Error(mensagem);
-  }
+    return dados;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('A consulta demorou demais. Tente novamente em alguns instantes.');
+    }
 
-  return dados;
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function iniciarBuscaImagem() {
@@ -209,19 +229,125 @@ function renderizarImagemPrincipal(dados) {
   atualizarBotaoFavorito();
 }
 
-function montarMidia(item) {
-  if (item.media_type === 'image') {
-    return `<img src="${item.url}" alt="${limparTexto(item.titulo)}">`;
+function urlEhVideoDireto(url) {
+  let caminho = String(url || '').split('?')[0];
+
+  try {
+    caminho = new URL(url).pathname;
+  } catch (error) {
+    caminho = String(url || '').split('?')[0];
+  }
+
+  return /\.(mp4|webm|ogg|ogv|mov|m4v)$/i.test(caminho);
+}
+
+function obterUrlEmbedVideo(url) {
+  try {
+    const endereco = new URL(url);
+    const host = endereco.hostname.replace(/^www\./, '');
+
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+      if (endereco.pathname.startsWith('/embed/')) {
+        return url;
+      }
+
+      const videoId = endereco.searchParams.get('v');
+
+      if (videoId) {
+        return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}`;
+      }
+    }
+
+    if (host === 'youtu.be') {
+      const videoId = endereco.pathname.split('/').filter(Boolean)[0];
+
+      if (videoId) {
+        return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}`;
+      }
+    }
+
+    if (host === 'player.vimeo.com') {
+      return url;
+    }
+
+    if (host === 'vimeo.com') {
+      const videoId = endereco.pathname.split('/').filter(Boolean)[0];
+
+      if (videoId) {
+        return `https://player.vimeo.com/video/${encodeURIComponent(videoId)}`;
+      }
+    }
+  } catch (error) {
+    return null;
+  }
+
+  return null;
+}
+
+function montarLinkAbrirMidia(url, texto) {
+  if (!url) {
+    return '';
   }
 
   return `
-    <div class="quadro-video">
-      <iframe src="${item.url}" title="${limparTexto(item.titulo)}" allowfullscreen></iframe>
-    </div>
     <div class="acoes-midia">
-      <a href="${item.url}" target="_blank">Abrir vídeo em nova aba</a>
+      <a href="${limparTexto(url)}" target="_blank" rel="noopener noreferrer">${texto}</a>
     </div>
   `;
+}
+
+function montarMidiaIndisponivel(texto) {
+  return `<div class="estado-midia-indisponivel"><p>${limparTexto(texto)}</p></div>`;
+}
+
+function montarMidia(item) {
+  const urlMidia = String(item.url || '').trim();
+
+  if (!urlMidia) {
+    return montarMidiaIndisponivel('Mídia indisponível para esta data.');
+  }
+
+  if (item.media_type === 'image') {
+    return `<img src="${limparTexto(urlMidia)}" alt="${limparTexto(item.titulo)}" onerror="tratarErroMidia(this)">`;
+  }
+
+  if (urlEhVideoDireto(urlMidia)) {
+    return `
+      <div class="quadro-video">
+        <video controls preload="metadata" onerror="tratarErroMidia(this)">
+          <source src="${limparTexto(urlMidia)}">
+          Seu navegador não conseguiu carregar este vídeo.
+        </video>
+      </div>
+      ${montarLinkAbrirMidia(urlMidia, 'Abrir vídeo em nova aba')}
+    `;
+  }
+
+  const urlEmbed = obterUrlEmbedVideo(urlMidia);
+
+  if (urlEmbed) {
+    return `
+      <div class="quadro-video">
+        <iframe src="${limparTexto(urlEmbed)}" title="${limparTexto(item.titulo)}" allowfullscreen></iframe>
+      </div>
+      ${montarLinkAbrirMidia(urlMidia, 'Abrir vídeo em nova aba')}
+    `;
+  }
+
+  return `
+    ${montarMidiaIndisponivel('Este vídeo não pode ser exibido dentro da página.')}
+    ${montarLinkAbrirMidia(urlMidia, 'Abrir vídeo em nova aba')}
+  `;
+}
+
+function tratarErroMidia(elemento) {
+  const areaMidia = elemento.closest('.area-midia-principal, .midia-modal, .area-miniatura-favorito');
+
+  if (!areaMidia) {
+    return;
+  }
+
+  areaMidia.innerHTML = montarMidiaIndisponivel('Não foi possível carregar esta mídia.');
 }
 
 async function salvarFavorito() {
@@ -280,7 +406,7 @@ function renderizarFavoritos() {
     let miniatura = '<div class="miniatura-video">Vídeo da NASA</div>';
 
     if (favorito.media_type === 'image') {
-      miniatura = `<img src="${favorito.url}" alt="${limparTexto(favorito.titulo)}">`;
+      miniatura = `<img src="${limparTexto(favorito.url)}" alt="${limparTexto(favorito.titulo)}" onerror="tratarErroMidia(this)">`;
     }
 
     html += `

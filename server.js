@@ -7,6 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const NASA_API_KEY = process.env.NASA_API_KEY || 'DEMO_KEY';
 const NASA_APOD_URL = 'https://api.nasa.gov/planetary/apod';
+const NASA_TIMEOUT_MS = 15000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -50,8 +51,27 @@ async function buscarNaNasa(data) {
     url.searchParams.set('date', data);
   }
 
-  const resposta = await fetch(url);
-  const dados = await resposta.json().catch(() => ({}));
+  const controlador = new AbortController();
+  const timeout = setTimeout(() => controlador.abort(), NASA_TIMEOUT_MS);
+  let resposta;
+  let dados;
+
+  try {
+    resposta = await fetch(url, { signal: controlador.signal });
+    dados = await resposta.json().catch(() => ({}));
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      const erroTimeout = new Error('A consulta demorou demais. Tente novamente em alguns instantes.');
+      erroTimeout.status = 504;
+      throw erroTimeout;
+    }
+
+    const erroConexao = new Error('Nao foi possivel conectar com a API da NASA.');
+    erroConexao.status = 502;
+    throw erroConexao;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!resposta.ok) {
     const mensagem =
